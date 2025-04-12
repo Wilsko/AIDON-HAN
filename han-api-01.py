@@ -11,7 +11,7 @@ import sqlite3
 app = Flask(__name__)
 
 # SQLite3 database file
-DATABASE = "sensor-data.db"
+DATABASE = "sensor_data.db"
 
 def get_data_from_db():
     """Fetch all rows from the 'data' table in the SQLite database."""
