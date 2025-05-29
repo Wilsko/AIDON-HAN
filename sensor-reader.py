@@ -40,11 +40,16 @@ def convert_timestamp_to_local_time(unix_timestamp):
     formatted_time = local_dt_object.strftime('%Y-%m-%d %H:%M:%S')
     return formatted_time
 
+def create_connection(db_file):
+    conn = sqlite3.connect(db_file)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
+
 def initialize_database():
     """
     Creates the 'data' table in the sensor_data.db database if it doesn't exist.
     """
-    conn = sqlite3.connect(DB_FILE)
+    conn = create_connection(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS data (
@@ -60,7 +65,7 @@ def remove_old_records():
     # Calculate the cutoff time (current time minus 1 hour and 1 minute)
     # 
    
-    conn = sqlite3.connect(DB_FILE)
+    conn = create_connection(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM data")
     record_count = cursor.fetchone()[0]
@@ -88,7 +93,7 @@ def writeData(input):
     remove_old_records()
     
     # Add new data
-    conn = sqlite3.connect(DB_FILE)
+    conn = create_connection(DB_FILE)
     cursor = conn.cursor()
     conn.execute("PRAGMA journal_mode=WAL;")
 

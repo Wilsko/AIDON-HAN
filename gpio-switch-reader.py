@@ -26,9 +26,14 @@ READ_INTERVAL = 10
 GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
 GPIO.setup(PIN_NUMBER, GPIO.IN)  # Set pin 33 as an input
 
+def create_connection(db_file):
+    conn = sqlite3.connect(db_file)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
+
 def initialize_database(db_file):
     """Creates the 'data' table if it doesn't exist."""
-    conn = sqlite3.connect(db_file)
+    conn = create_connection(db_file)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS data (
@@ -41,7 +46,7 @@ def initialize_database(db_file):
 
 def store_data(db_file, timestamp, switch_state):
     """Stores timestamp and GPIO state in the specified database."""
-    conn = sqlite3.connect(db_file)
+    conn = create_connection(db_file)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO data (timestamp, Switch2) VALUES (?, ?)", (timestamp, switch_state))
     conn.commit()
@@ -52,7 +57,7 @@ def remove_old_records(db_file, max_records=None):
     Removes records from the specified database.
     - If max_records is specified, ensures the table contains at most max_records entries.
     """
-    conn = sqlite3.connect(db_file)
+    conn = create_connection(db_file)
     cursor = conn.cursor()
 
     if max_records:
