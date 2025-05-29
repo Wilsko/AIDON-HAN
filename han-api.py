@@ -66,7 +66,7 @@ def get_mgmt_data():
     Returns:
         JSON: All rows from the data table in mgmt_data.db.
     """
-    query = "SELECT * FROM data"
+    query = "SELECT * FROM data order by timestamp desc"
     data = fetch_all_data(MGMT_DB, query)
     return jsonify(data)
 
@@ -78,7 +78,7 @@ def get_gpio_data():
     Returns:
         JSON: All rows from the data table in gpio_data.db.
     """
-    query = "SELECT * FROM data"
+    query = "SELECT * FROM data order by timestamp desc"
     data = fetch_all_data(GPIO_DB, query)
     return jsonify(data)
 
@@ -90,7 +90,7 @@ def get_mgmt_changes():
     Returns:
         JSON: All rows from the data table in mgmt_changes.db
     """
-    query = "SELECT * FROM data"
+    query = "SELECT * FROM data order by timestamp desc"
     data = fetch_all_data(MGMT_CHANGES_DB, query)
     return jsonify(data)
 	
@@ -102,7 +102,7 @@ def get_gpio_changes():
     Returns:
         JSON: All rows from the data table in gpio_changes.db
     """
-    query = "SELECT * FROM data"
+    query = "SELECT * FROM data order by timestamp desc"
     data = fetch_all_data(GPIO_CHANGES_DB, query)
     return jsonify(data)
 	
