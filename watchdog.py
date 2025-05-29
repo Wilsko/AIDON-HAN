@@ -101,7 +101,7 @@ def check_databases():
 
     # Combine all report lines into one string
     full_report = "\n".join(report_lines)
-    write_report(message = full_report, mode = APPEND_MODE)
+    write_report(message = full_report, mode = WRITE_MODE)
 
 if __name__ == "__main__":
     print("Starting database monitoring...")
