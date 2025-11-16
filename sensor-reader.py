@@ -131,9 +131,9 @@ def parseTimestamp(input):
     Returns:
         int: The Unix epoch time for the extracted timestamp.
     """
-    match = re.search(r"\((\d+S)\)", input)
+    match = re.search(r"\((\d+[SW])\)", input)
     if match:
-        timestamp_str = match.group(1)[:-1]  # Remove the trailing "S"
+        timestamp_str = match.group(1)[:-1]  # Remove the trailing "S" or "W"
     else:
         raise ValueError("No timestamp found in the input string.")
 
