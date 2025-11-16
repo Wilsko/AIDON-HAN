@@ -127,6 +127,7 @@ def writeData(input):
         if timestamp_from_values.minute in HISTORY_WRITE_MINUTES and timestamp_from_values.minute != LAST_HISTORY_WRITE_MINUTE:
             history_conn = create_connection(HISTORY_DB_FILE)
             history_cursor = history_conn.cursor()
+            history_conn.execute("PRAGMA journal_mode=WAL;")
             history_cursor.execute("INSERT INTO data (timestamp, total_energy) VALUES (?, ?)",
                                 (input["timestamp"], totalEnergy["value"]))
             history_conn.commit()
