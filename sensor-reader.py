@@ -20,8 +20,11 @@ from datetime import datetime, timezone, timedelta
 CUTOFF_TIME = 3660
 
 DB_FILE = "sensor_data.db"
+HISTORY_DB_FILE = "sensor_data_history.db"
 SERIAL_PORT = "/dev/ttyS0"
 SERIAL_BAUDRATE = 115200
+LAST_HISTORY_WRITE_MINUTE = -1
+HISTORY_WRITE_MINUTES = [0, 15, 30, 45]
 
 def convert_timestamp_to_local_time(unix_timestamp):
     """
@@ -46,6 +49,20 @@ def create_connection(db_file):
     return conn
 
 def initialize_database():
+    """
+    Creates the 'data' table in the sensor_data_history.db database if it doesn't exist.
+    """
+    history_conn = create_connection(HISTORY_DB_FILE)
+    history_cursor = history_conn.cursor()
+    history_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS data (
+            timestamp INTEGER PRIMARY KEY,
+            total_energy REAL
+        )
+    """)
+    history_conn.commit()
+    history_conn.close()
+
     """
     Creates the 'data' table in the sensor_data.db database if it doesn't exist.
     """
@@ -102,6 +119,19 @@ def writeData(input):
 
     conn.commit()
     conn.close()
+
+    # Write total energy value to separate history database
+    totalEnergy = next((item for item in input["values"] if item["key"] == "1-0:1.8.0"), None)
+    if totalEnergy:
+        timestamp_from_values = datetime.fromtimestamp(input["timestamp"])
+        if timestamp_from_values.minute in HISTORY_WRITE_MINUTES and timestamp_from_values.minute != LAST_HISTORY_WRITE_MINUTE:
+            history_conn = create_connection(HISTORY_DB_FILE)
+            history_cursor = history_conn.cursor()
+            history_cursor.execute("INSERT INTO data (timestamp, total_energy) VALUES (?, ?)",
+                                (input["timestamp"], totalEnergy["value"]))
+            history_conn.commit()
+            history_conn.close()
+            LAST_HISTORY_WRITE_MINUTE = timestamp_from_values.minute
 
 def parseData(inputList):
     """
