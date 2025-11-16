@@ -99,6 +99,7 @@ def remove_old_records():
     # print(f"Old records older than 1 hour and 1 minute have been removed.")       
 
 def writeData(input):
+    global LAST_HISTORY_WRITE_MINUTE
     """
     Stores formatted data into the SQLite sensor_data.db database.
 
