@@ -1,0 +1,65 @@
+API
+
+/api/sensor_data
+/api/sensor_15min_data
+/api/sensor_hourly_data'
+/api/mgmt_data
+/api/gpio_data
+/api/mgmt_changes
+/api/gpio_changes
+/api/monitor
+
+'data'-apeissa parametrina voi olla count=xxx, palautetaan count tietuetta.
+Jos parametri puuttuu, palautetaan kaikki tietueet
+
+Tab1 - etusivu
+
+kytkin1, kellonaika, kytkin2
+
+Hetkellinen RMS-vaihevirta L1 A		1-0:31.7.0.255
+Hetkellinen RMS-vaihevirta L2 A		1-0:51.7.0.255
+Hetkellinen RMS-vaihevirta L3 A		1-0:71.7.0.255
+
+Hetkellinen RMS vaihejännite L1	V	1-0:32.7.0.255
+Hetkellinen RMS vaihejännite L2	V	1-0:52.7.0.255
+Hetkellinen RMS vaihejännite L3	V	1-0:72.7.0.255
+
+Hetkellinen pätöteho+ (Q1+Q4) kWh	1-0:1.8.0.255 
+Hetkellinen pätöteho+ (L1) kWh		1-0:21.7.0.255 
+Hetkellinen pätöteho+ (L2) kWh		1-0:41.7.0.255 
+Hetkellinen pätöteho+ (L3) kWh		1-0:61.7.0.255 
+
+Kumulatiivinen tuntikohtainen sähköverkosta otettu pätöenergia (R+) (Q1+Q2) kVArh, lämpötila
+
+Tab2 - hetkelliset vaihekohtaiset tehot
+viivagrafiikka 
+
+Tab2.1? - hetkelliset vaihekohtaiset virrat
+viivagrafiikka
+Näyttää selvästi jos liittymän nimellisvirta ylitetään 
+
+Tab3 - Loisenergia
+Kumulatiivinen tuntikohtainen sähköverkosta otettu loisenergia (R+) (Q1+Q2) kVArh 
+Hetkellinen loisteho+ (Q1+Q2) kVAr	1-0:3.7.0.255 
+Hetkellinen loisteho+ (L1) kVAr		1-0:23.7.0.255 
+Hetkellinen loisteho+ (L2) kVAr		1-0:43.7.0.255 
+Hetkellinen loisteho+ (L3) kVAr		1-0:63.7.0.255 
+
+Tab4 - Kokonaisenergiankulutus 15 min välein
+pylväsgrafiikka
+history15_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS data (
+            timestamp INTEGER PRIMARY KEY,
+            total_energy REAL,
+            consumed_energy REAL
+        )
+
+
+Tab5 - Kokonaisenergiankulutus tunnin välein
+pylväsgrafiikka
+history_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS data (
+            timestamp INTEGER PRIMARY KEY,
+            total_energy REAL
+        )
+
