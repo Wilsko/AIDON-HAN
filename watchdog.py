@@ -30,7 +30,7 @@ def get_local_time():
     """
     # Replace 'Europe/Helsinki' with your local timezone
     local_timezone = pytz.timezone("Europe/Helsinki")
-    
+
     # Get current UTC time and convert to local time
     local_time = datetime.now(pytz.utc).astimezone(local_timezone)
     return local_time

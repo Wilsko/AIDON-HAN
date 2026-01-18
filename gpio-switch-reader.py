@@ -5,7 +5,7 @@
 # when pin 33 state change is detected.
 # When pin state is HIGH, the value stored is 0, 1 otherwise.
 # Stored value means closed switch.
-# Record count of both databases is limited to MAX_RECORDS, Oldest 
+# Record count of both databases is limited to MAX_RECORDS, Oldest
 # records are deleted when necessary.
 # Interval between GPIO reads is defined as READ_INTERVAL
 # Program is ment to be tun as a service process
@@ -124,4 +124,3 @@ if __name__ == "__main__":
         print("Program interrupted.")
     finally:
         GPIO.cleanup()  # Clean up GPIO settings
-
