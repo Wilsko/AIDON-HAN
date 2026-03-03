@@ -29,7 +29,7 @@ Hetkellinen pätöteho+ (L1) kWh		1-0:21.7.0.255
 Hetkellinen pätöteho+ (L2) kWh		1-0:41.7.0.255 
 Hetkellinen pätöteho+ (L3) kWh		1-0:61.7.0.255 
 
-Kumulatiivinen tuntikohtainen sähköverkosta otettu pätöenergia (R+) (Q1+Q2) kVArh, lämpötila
+Kumulatiivinen tuntikohtainen sähköverkosta otettu pätöenergia (R+) (Q1+Q2) kVArh, ympäristön lämpötila, piirilevyn lämpötila, prosessorin lämpötila
 
 Tab2 - hetkelliset vaihekohtaiset tehot
 viivagrafiikka 
@@ -62,4 +62,5 @@ history_cursor.execute("""
             timestamp INTEGER PRIMARY KEY,
             total_energy REAL
         )
+
 
