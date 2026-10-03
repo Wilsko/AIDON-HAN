@@ -8,4 +8,4 @@ Python palvelut, jotka lukevat HAN-kortin tuottamat tiedot sqlite3-kantoihin
 
 - watchdog.py lukee kannoista viimeisten talletustebn aikaleimat ja hälyttää mikäli ne tulkitaan vanhentuneiksi
 
-han-api-py julkaisee kantojen tietoja json muotoiltuna
+han-api.py julkaisee kantojen tietoja json-muotoiltuna
