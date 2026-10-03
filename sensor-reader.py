@@ -11,6 +11,19 @@
 #            koodataan graafeille oma ohjelma jos tarvis
 # 21.12.2025 3 desimaalia consumed-energyyn 
 # 16.1.2026  CUTOFF_TIME = 2*3660
+# 4.3.2026 poistettu matplotlib viittaukset
+# 10.4.2026 versiotiedot
+# 27.4.2026 60min ja 15min datan tallennus korjattu. Lisätty info.
+# version info
+# 1.3 12.5.2025 90sec database, kirjoitettu 90s funktiot ja alustus, kirjoitus puuttuu
+# 
+VERSION="0.1.2"
+import sys
+if "--version" in sys.argv:
+    print(VERSION)
+    sys.exit(0)
+print(f"{__file__} version {VERSION} starting")
+
 import serial
 import re
 import sqlite3
@@ -18,10 +31,10 @@ import json
 import time
 from datetime import datetime, timezone, timedelta
 
-import matplotlib
-matplotlib.use('Agg')   # Use non-GUI backend
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+#import matplotlib
+#matplotlib.use('Agg')   # Use non-GUI backend
+#import matplotlib.pyplot as plt
+#import matplotlib.dates as mdates
 
 # CUTOFF_TIME = 3660
 CUTOFF_TIME = 2*3660
@@ -29,11 +42,13 @@ CUTOFF_TIME = 2*3660
 DB_FILE = "sensor_data.db"
 HISTORY_DB_FILE = "sensor_data_history.db"
 HISTORY_15MIN_DB_FILE = "sensor_data_15min.db"
+HISTORY_90SEC_DB_FILE = "sensor_data_90sec.db"
 SERIAL_PORT = "/dev/ttyS0"
 SERIAL_BAUDRATE = 115200
 LAST_HISTORY_WRITE_MINUTE = -1
 LAST_TOTAL_ENERGY = None
 HISTORY_WRITE_MINUTES = [0, 15, 30, 45]
+HISTORY_90_SEC_WRITE_SECONDS = [0, 30]
 
 def convert_timestamp_to_local_time(unix_timestamp):
     local_dt_object = datetime.fromtimestamp(unix_timestamp)
@@ -45,7 +60,7 @@ def create_connection(db_file):
     return conn
 
 def initialize_database():
-    # History DB (total energy at 15-min marks)
+    # History DB (total energy at 60-min marks)
     history_conn = create_connection(HISTORY_DB_FILE)
     history_cursor = history_conn.cursor()
     history_cursor.execute("""
@@ -81,6 +96,19 @@ def initialize_database():
     """)
     history15_conn.commit()
     history15_conn.close()
+    
+    # 90 sec history DB (total + consumed delta)
+    history90s_conn = create_connection(HISTORY_90SEC_DB_FILE)
+    history90s_cursor = history90s_conn.cursor()
+    history90s_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS data (
+            timestamp INTEGER PRIMARY KEY,
+            total_energy REAL,
+            consumed_energy REAL
+        )
+    """)
+    history90s_conn.commit()
+    history90s_conn.close()
 
 def remove_old_records():
     cutoff_time = int(time.time()) - CUTOFF_TIME
@@ -89,25 +117,34 @@ def remove_old_records():
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM data")
     record_count = cursor.fetchone()[0]
-    print(f"Record count {record_count}")
-    print(f"{DB_FILE}: Deleting old records. Cutoff timestamp = {cutoff_str} ({cutoff_time})")
+    # print(f"Record count {record_count}")
+    # print(f"{DB_FILE}: Deleting old records. Cutoff timestamp = {cutoff_str} ({cutoff_time})")
     cursor.execute("DELETE FROM data WHERE timestamp < ?", (cutoff_time,))
     conn.commit()
     conn.close()
 
 def remove_old_15min_records():
     """Remove records older than 31 days from sensor_data_15min.db."""
-    cutoff_time = int(time.time()) - (31 * 24 * 3600)
+    cutoff_time = int(time.time()) - (31 * 24 * 3600) # 31 days
     conn = create_connection(HISTORY_15MIN_DB_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM data WHERE timestamp < ?", (cutoff_time,))
     conn.commit()
     conn.close()
+    
+def remove_old_90sec_records():
+    """Remove records older than 31 days from sensor_data_15min.db."""
+    cutoff_time = int(time.time()) - (2 * 24 * 3600) # 2 days
+    conn = create_connection(HISTORY_90SEC_DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM data WHERE timestamp < ?", (cutoff_time,))
+    conn.commit()
+    conn.close()    
 
-def init_last_total_energy_from_db():
+def init_last_total_energy_from_db(db):
     """Initialize LAST_TOTAL_ENERGY from the most recent 15-min record if available."""
     global LAST_TOTAL_ENERGY
-    conn = create_connection(HISTORY_15MIN_DB_FILE)
+    conn = create_connection(db)
     cursor = conn.cursor()
     cursor.execute("SELECT total_energy FROM data ORDER BY timestamp DESC LIMIT 1")
     row = cursor.fetchone()
@@ -134,17 +171,21 @@ def writeData(input):
         ts_dt = datetime.fromtimestamp(input["timestamp"])
         if ts_dt.minute in HISTORY_WRITE_MINUTES and ts_dt.minute != LAST_HISTORY_WRITE_MINUTE:
             # Write to simple history DB
-            hconn = create_connection(HISTORY_DB_FILE)
-            hcur = hconn.cursor()
-            hcur.execute("INSERT INTO data (timestamp, total_energy) VALUES (?, ?)",
-                         (input["timestamp"], totalEnergy["value"]))
-            hconn.commit()
-            hconn.close()
-
+            if ts_dt.minute == 0 and ts_dt.minute != LAST_HISTORY_WRITE_MINUTE:
+                
+                hconn = create_connection(HISTORY_DB_FILE)
+                hcur = hconn.cursor()
+                hcur.execute("SELECT COUNT(*) FROM data")
+                record_count = hcur.fetchone()[0]
+                hcur.execute("INSERT INTO data (timestamp, total_energy) VALUES (?, ?)",
+                            (input["timestamp"], totalEnergy["value"]))
+                hconn.commit()
+                hconn.close()
+                print(f"\nHistoryDB: {input['timestamp']}, {totalEnergy['value']} kWh, {record_count} records")
             # Prepare consumed delta for 15-min DB
             if LAST_TOTAL_ENERGY is None:
                 # Try to initialize from DB in case of restart
-                init_last_total_energy_from_db()
+                init_last_total_energy_from_db(HISTORY_15MIN_DB_FILE)
             consumed_energy = None
             if LAST_TOTAL_ENERGY is not None:
                 consumed_energy = round(totalEnergy["value"] - LAST_TOTAL_ENERGY,3)
@@ -153,15 +194,18 @@ def writeData(input):
                     consumed_energy = None
 
             # Write to 15-min DB
+
             h15conn = create_connection(HISTORY_15MIN_DB_FILE)
             h15cur = h15conn.cursor()
+            h15cur.execute("SELECT COUNT(*) FROM data")
+            record_count = h15cur.fetchone()[0]
             h15cur.execute(
                 "INSERT INTO data (timestamp, total_energy, consumed_energy) VALUES (?, ?, ?)",
                 (input["timestamp"], totalEnergy["value"], consumed_energy)
             )
             h15conn.commit()
             h15conn.close()
-
+            print(f"\n15min DB: {ts_dt}, {consumed_energy} kWh, {record_count} records")
             # Cleanup retention
             remove_old_15min_records()
 
@@ -199,7 +243,7 @@ def parseValue(line):
             "unit": match.group(3)
         }
     else:
-        raise ValueError("Input string does not match the expected format.")
+        raise ValueError("\nInput string does not match the expected format.")
 
 def readData(dataConnection):
     dataConnection.reset_input_buffer()
@@ -220,10 +264,10 @@ def readData(dataConnection):
 
             parsed_data = parseData(frames)
             writeData(parsed_data)
-            print(f"Timestamp: {parsed_data['timestamp']}, Valid data received for {DB_FILE}")
-
+         #   print(f"Timestamp: {parsed_data['timestamp']}, Valid data received for {DB_FILE}")
+            print(".", end="", flush=True)
         except Exception as e:
-            print(f"Error processing serial data: {e}")
+            print(f"\nError processing serial data: {e}")
 
         time.sleep(0.5)
 
@@ -234,7 +278,8 @@ if __name__ == "__main__":
     # Initialize DBs
     initialize_database()
     # Initialize delta baseline from DB (helps after restarts)
-    init_last_total_energy_from_db()
+    init_last_total_energy_from_db(HISTORY_15MIN_DB_FILE)
+    init_last_total_energy_from_db(HISTORY_90SEC_DB_FILE)
 
     # Open serial and start reading
     serData = serial.Serial(port=SERIAL_PORT, baudrate=SERIAL_BAUDRATE)
@@ -244,6 +289,6 @@ if __name__ == "__main__":
         readData(serData)
     except KeyboardInterrupt:
 
-        print("Program interrupted. Exiting...")
+        print("\nProgram interrupted. Exiting...\n")
     finally:
         serData.close()
